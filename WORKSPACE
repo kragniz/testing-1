@@ -4,7 +4,7 @@ load("@bazel_tools//tools/build_defs/repo:http.bzl", "http_archive")
 
 git_repository(
     name = "bazel_skylib",
-    commit = "2169ae1c374aab4a09aa90e65efe1a3aad4e279b",
+    tag = "0.5.0",
     remote = "https://github.com/bazelbuild/bazel-skylib.git",
 )
 
@@ -14,24 +14,19 @@ versions.check(minimum_bazel_version = "0.15.0")
 
 http_archive(
     name = "io_bazel_rules_go",
-    sha256 = "1868ff68d6079e31b2f09b828b58d62e57ca8e9636edff699247c9108518570b",
-    url = "https://github.com/bazelbuild/rules_go/releases/download/0.11.1/rules_go-0.11.1.tar.gz",
+    sha256 = "f87fa87475ea107b3c69196f39c82b7bbf58fe27c62a338684c20ca17d1d8613",
+    urls = ["https://github.com/bazelbuild/rules_go/releases/download/0.16.2/rules_go-0.16.2.tar.gz"],
 )
 
-http_archive(
-    name = "io_bazel_rules_go",
-    urls = ["https://github.com/bazelbuild/rules_go/releases/download/0.15.1/rules_go-0.15.1.tar.gz"],
-    sha256 = "5f3b0304cdf0c505ec9e5b3c4fc4a87b5ca21b13d8ecc780c97df3d1809b9ce6",
-)
 load("@io_bazel_rules_go//go:def.bzl", "go_rules_dependencies", "go_register_toolchains")
 go_rules_dependencies()
 go_register_toolchains(
-    go_version = "1.11",
+    go_version = "1.11.2",
 )
 
 git_repository(
     name = "test_infra",
-    commit = "68e120713d092848333a8efde4c6d552b12527bc",
+    commit = "b3f2df38ec0b88c2c97ece9d334aea81dc0a5e36",
     remote = "https://github.com/jetstack/test-infra.git",
 )
 
@@ -201,3 +196,34 @@ filegroup(
 )
 """,
 )
+
+# Needed for Spyglass in test-infra
+git_repository(
+    name = "build_bazel_rules_nodejs",
+    remote = "https://github.com/bazelbuild/rules_nodejs.git",
+    tag = "0.14.0",
+)
+
+load("@build_bazel_rules_nodejs//:defs.bzl", "node_repositories", "yarn_install")
+
+node_repositories(package_json = ["@test_infra//:package.json"])
+
+yarn_install(
+    name = "npm",
+    package_json = "@test_infra//:package.json",
+    yarn_lock = "@test_infra//:yarn.lock",
+)
+
+http_archive(
+    name = "build_bazel_rules_typescript",
+    strip_prefix = "rules_typescript-0.18.0",
+    url = "https://github.com/bazelbuild/rules_typescript/archive/0.18.0.zip",
+)
+
+# Fetch our Bazel dependencies that aren't distributed on npm
+load("@build_bazel_rules_typescript//:package.bzl", "rules_typescript_dependencies")
+
+rules_typescript_dependencies()
+
+# Setup TypeScript toolchain
+load("@build_bazel_rules_typescript//:defs.bzl", "ts_setup_workspace")
